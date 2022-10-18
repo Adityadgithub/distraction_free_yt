@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:distractfreeyt/bookmark.dart';
 import 'package:distractfreeyt/playvideo.dart';
 import 'package:distractfreeyt/searchpage.dart';
@@ -7,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_api/youtube_api.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:youtube_video_info/youtube.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +21,8 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
-List<String> bookmarklinks = [];
+// List<String> bookmarklinks = [];
+List<String> link = [];
 
 class MyApp extends StatelessWidget {
   @override
@@ -57,6 +61,13 @@ class _DemoAppState extends State<DemoApp> {
 
   YoutubeAPI youtube = YoutubeAPI(key);
 
+  List title = [];
+  List thumbnail = [];
+  List authorname = [];
+  List desc = [];
+
+  bool dataloaded = false;
+
   Future<void> callAPI() async {
     videoResult = await youtube.search(
       search,
@@ -67,24 +78,90 @@ class _DemoAppState extends State<DemoApp> {
     setState(() {});
   }
 
-  var link;
-
+  late Timer _timer;
   YoutubeDataModel? videoData;
   @override
   void initState() {
     super.initState();
-    for (var i = 0; i < 3; i++) {
-      print("dsds");
-    }
+    // _timer = Timer.periodic(Duration(milliseconds: 1), (timer) {
+    //   setState(() {});
+    // });
     link = Bookmarklink.getdata() ?? [];
+    link!.forEach((element) {
+      print("hety");
+      getvideodata(element);
+    });
+
+    setState(() {});
     callAPI();
     print('done');
   }
 
-  Future<Object> getvideodata(videoitem) async {
+  void getvideodata(videoitem) async {
     setState(() {});
     // return ("date bora bora");
-    return videoData = await YoutubeData.getData(videoitem);
+    videoData = await YoutubeData.getData(videoitem);
+    thumbnail.add(videoData!.thumbnailUrl);
+    title.add(videoData!.title);
+    authorname.add(videoData!.authorName);
+    desc.add(videoData!.fullDescription);
+    dataloaded = true;
+    setState(() {});
+  }
+
+  Future<void> remove(
+      {playurl,
+      titlename,
+      thumbnailimg,
+      authornameelement,
+      descelement}) async {
+    for (var l in link) {
+      if (l == playurl) {
+        print('''
+FOUND the link
+value of playurl = $playurl
+link listt = $link''');
+        link.remove(playurl);
+
+        await Bookmarklink.save(link) ?? [];
+        for (var t in title) {
+          if (t == titlename) {
+            title.remove(titlename);
+          }
+
+          setState(() {});
+          print('''
+FOUND the title
+value of titlename = $titlename
+title listt = $title''');
+
+// thumbnail
+// authorname
+// desc
+        }
+        for (var t in thumbnail) {
+          if (t == thumbnailimg) {
+            thumbnail.remove(thumbnailimg);
+          }
+
+          setState(() {});
+        }
+        for (var a in authorname) {
+          if (a == authornameelement) {
+            authorname.remove(authornameelement);
+          }
+
+          setState(() {});
+        }
+        for (var d in desc) {
+          if (d == descelement) {
+            desc.remove(descelement);
+          }
+
+          setState(() {});
+        }
+      }
+    }
   }
 
   @override
@@ -133,7 +210,12 @@ class _DemoAppState extends State<DemoApp> {
                                     onPressed: () async {
                                       progress = true;
                                       setState(() {});
-                                      videoResult = (await youtube.prevPage())!;
+                                      if (index == 1) {
+                                        await callAPI();
+                                      } else {
+                                        videoResult =
+                                            (await youtube.prevPage())!;
+                                      }
                                       index -= 1;
                                       setState(() {});
                                       progress = false;
@@ -181,6 +263,15 @@ class _DemoAppState extends State<DemoApp> {
                       title: Padding(
                         padding: const EdgeInsets.only(bottom: 5.0),
                         child: TextFormField(
+                          onFieldSubmitted: (value) async {
+                            progress = true;
+                            setState(() {});
+                            await callAPI();
+                            setState(() {});
+                            progress = false;
+                            index = 0;
+                            setState(() {});
+                          },
                           initialValue: search,
                           style: TextStyle(color: Colors.white),
                           onChanged: (value) {
@@ -251,7 +342,7 @@ class _DemoAppState extends State<DemoApp> {
                                   BoxShadow(
                                     color: Color.fromARGB(255, 255, 48, 65),
                                     blurRadius: 6.0,
-                                    spreadRadius: -3,
+                                    spreadRadius: -5,
                                   ),
                                 ],
                               ),
@@ -284,11 +375,23 @@ class _DemoAppState extends State<DemoApp> {
                             ),
                             SizedBox(height: 15),
                             Container(
-                              width: 270,
-                              height: 40,
+                              width: MediaQuery.of(context).size.width - 60,
                               decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.white)),
+                                  borderRadius: BorderRadius.circular(15),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                  )),
                               child: TextFormField(
+                                onFieldSubmitted: (value) async {
+                                  pressed = true;
+                                  progress = true;
+                                  setState(() {});
+                                  await callAPI();
+                                  progress = false;
+                                  index = 0;
+                                  setState(() {});
+                                },
+                                // textInputAction: TextInputAction.search,
                                 style: TextStyle(color: Colors.white),
                                 onChanged: (value) {
                                   search = value;
@@ -296,8 +399,8 @@ class _DemoAppState extends State<DemoApp> {
                                 decoration: InputDecoration(
                                     hintText: "search your topics here",
                                     hintStyle: TextStyle(color: Colors.grey),
-                                    contentPadding:
-                                        EdgeInsets.only(top: 5, left: 10),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        vertical: 15, horizontal: 15),
                                     focusedBorder: InputBorder.none,
                                     suffixIcon: InkWell(
                                       onTap: () async {
@@ -319,72 +422,159 @@ class _DemoAppState extends State<DemoApp> {
                           ],
                         ),
                       ),
-                ListView(
-                  children: [
-                    //                   ...testitems.map((testitems){i + = 1; return Text(${testitems)})
-                    // print(testitems[0]['a']);
+                link.isEmpty
+                    ? Center(
+                        child: Text(
+                        'No Saved',
+                        style: TextStyle(color: Colors.grey),
+                      ))
+                    : Column(
+                        mainAxisAlignment: dataloaded == true
+                            ? MainAxisAlignment.start
+                            : MainAxisAlignment.center,
+                        children: [
+                          dataloaded == true
+                              ? Expanded(
+                                  child: ListView(
+                                    children: [
+                                      //                   ...testitems.map((testitems){i + = 1; return Text(${testitems)})
+                                      // print(testitems[0]['a']);
 
-                    ...link!.map<Widget>((item) {
-                      // print('list runiingh');
-                      getvideodata(item);
-                      // setState(() {});
-                      // return Text("${videoData!.authorName}");
-                      return Container(
-                        margin: EdgeInsets.symmetric(vertical: 7.0),
-                        padding: EdgeInsets.all(12.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            Padding(
-                              padding: const EdgeInsets.only(right: 20.0),
-                              child: Image.network(
-                                videoData?.thumbnailUrl ?? '',
-                                width: 120.0,
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    "${videoData?.title}",
-                                    softWrap: true,
-                                    style: TextStyle(
-                                        fontSize: 13.0,
-                                        color:
-                                            Color.fromARGB(223, 255, 253, 253)),
+                                      ...title.map<Widget>((item) {
+                                        // print('list runiingh');
+
+                                        // getvideodata(item);
+                                        // setState(() {});
+                                        // return Text("${videoData!.authorName}");
+                                        var index = title.indexOf(item);
+                                        print("link listt = $link");
+
+                                        return InkWell(
+                                          onTap: () {
+                                            playurl = link[index];
+                                            videotitle = title[index];
+                                            channelname = authorname[index];
+                                            videodesc = desc[index];
+                                            Navigator.pushReplacementNamed(
+                                                context, "PlayVideo");
+                                          },
+                                          child: Container(
+                                            margin: EdgeInsets.symmetric(
+                                                vertical: 7.0),
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Slidable(
+                                              endActionPane: ActionPane(
+                                                  motion: BehindMotion(),
+                                                  children: [
+                                                    SlidableAction(
+                                                      // An action can be bigger than the others.
+                                                      flex: 2,
+                                                      onPressed: (value) {
+                                                        remove(
+                                                            playurl:
+                                                                link![index],
+                                                            titlename:
+                                                                title[index],
+                                                            authornameelement:
+                                                                authorname[
+                                                                    index],
+                                                            descelement:
+                                                                desc[index],
+                                                            thumbnailimg:
+                                                                thumbnail[
+                                                                    index]);
+                                                        setState(() {});
+                                                      },
+                                                      backgroundColor:
+                                                          Color(0xFFFE4A49),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      icon: Icons.delete,
+                                                      label: 'Delete',
+                                                    ),
+                                                  ]),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: <Widget>[
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            right: 20.0),
+                                                    child: Image.network(
+                                                      thumbnail[index] ?? '',
+                                                      width: 120.0,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: <Widget>[
+                                                        Text(
+                                                          "${title[index]}",
+                                                          softWrap: true,
+                                                          style: TextStyle(
+                                                              fontSize: 13.0,
+                                                              color: Color
+                                                                  .fromARGB(
+                                                                      223,
+                                                                      255,
+                                                                      253,
+                                                                      253)),
+                                                        ),
+                                                        Padding(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  vertical:
+                                                                      3.0),
+                                                          child: Text(
+                                                            "${authorname[index]}",
+                                                            softWrap: true,
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: Colors
+                                                                    .grey),
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: 15,
+                                                          child: Text(
+                                                            "${desc[index]}",
+                                                            softWrap: true,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .grey),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                    ],
                                   ),
-                                  Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(vertical: 3.0),
-                                    child: Text(
-                                      "${videoData?.authorName}",
-                                      softWrap: true,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: 15,
-                                    child: Text(
-                                      "${videoData?.description}",
-                                      softWrap: true,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(color: Colors.grey),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                      );
-                    })
-                  ],
-                )
+                                )
+                              : Center(
+                                  child: CircularProgressIndicator.adaptive(),
+                                ),
+                        ],
+                      )
               ])),
         ),
       ),

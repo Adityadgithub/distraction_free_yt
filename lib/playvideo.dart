@@ -41,7 +41,8 @@ class _PlayVideoState extends State<PlayVideo> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () {
-        Navigator.pushNamed(context, "MyApp");
+        // playurl = null;
+        Navigator.pushReplacementNamed(context, "MyApp");
         saved = false;
         return null!;
       },
@@ -112,8 +113,9 @@ class _PlayVideoState extends State<PlayVideo> {
             onPressed: () {
               saved = false;
 
+              // playurl = null;
               setState(() {});
-              Navigator.pushNamed(context, "MyApp");
+              Navigator.pushReplacementNamed(context, "MyApp");
             },
           ),
         ),
